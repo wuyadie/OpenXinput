@@ -13,7 +13,7 @@ If you want even more compatibility with legit Xinput, you can check the library
 ### Finding max controller count.
 ```
 DWORD XinputMaxControllerCount = XUSER_MAX_COUNT;
-HMODULE hXinput = GetModuleHandleW(L"Xinput1_3.dll");
+HMODULE hXinput = GetModuleHandleW(L"Xinput1_4.dll");
 if (hXinput != NULL)
 {
     XInputGetMaxControllerCount_t* pfnXInputGetMaxControllerCount_t = (XInputGetMaxControllerCount_t*)GetProcAddress(hXinput, "XInputGetMaxControllerCount");
@@ -60,8 +60,8 @@ Theses options are used at compile time:
   - OPENXINPUT_STATIC_GUIDS: Use static versions of all UUIDs used by OpenXinput (for more compatility).\
 Note: If Microsoft removed theses UUIDs from the system, using the static version will still not work, but you'll be able to use/compile the OpenXinput library.
 
-  - OPENXINPUT_DISABLE_DSOUND_HEADERS: Remove the DSound headers from OpenXinput.\
-As DirectX is deprecated and might be removed in the future, this should help with backward compatibility.
+  - OPENXINPUT_DISABLE_COM: Disable calls to COM objects.
+XInput 1.4 seems to use some COM object to open the XInput device, setting this will disable this behavior.
 
 
 ## Minimal implementation

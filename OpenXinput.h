@@ -361,6 +361,17 @@ typedef DWORD(WINAPI XInputGetMaxControllerCount_t)();
 ////////////////////////////////////////
 // Here lies the hidden part on Xinput
 
+typedef struct _XINPUT_CAPABILITIES_EX
+{
+    XINPUT_CAPABILITIES Capabilities;
+    WORD VendorId;
+    WORD ProductId;
+    WORD unk0;
+    WORD unk1;
+    DWORD unk2;
+} XINPUT_CAPABILITIES_EX, *PXINPUT_CAPABILITIES_EX;
+
+
 typedef struct _XINPUT_LISTEN_STATE
 {
     DWORD Status;
@@ -373,6 +384,19 @@ typedef struct _XINPUT_LISTEN_STATE
     WORD unk7;
     WORD unk8;
 } XINPUT_LISTEN_STATE, * PXINPUT_LISTEN_STATE;
+
+typedef struct _XINPUT_BASE_BUS_INFORMATION
+{
+    WORD vendorId;
+    WORD productId;
+    WORD inputId;
+    WORD field_6;
+    DWORD field_8;
+    BYTE field_C;
+    BYTE field_D;
+    BYTE field_E;
+    BYTE field_F;
+} XINPUT_BASE_BUS_INFORMATION, *PXINPUT_BASE_BUS_INFORMATION;
 
 struct XINPUT_GUIDE_EVENT
 {
@@ -404,6 +428,19 @@ DWORD WINAPI XInputWaitForGuideButton(_In_ DWORD dwUserIndex, _In_ HANDLE hEvent
 DWORD WINAPI XInputCancelGuideButtonWait(_In_ DWORD dwUserIndex);
 
 DWORD WINAPI XInputPowerOffController(_In_ DWORD dwUserIndex);
+
+DWORD WINAPI XInputGetBaseBusInformation(
+    _In_ DWORD dwBusIndex,                                 // Must be between in the range [0-16)
+    _Out_ XINPUT_BASE_BUS_INFORMATION* pBaseBusInformation // 
+);
+
+DWORD WINAPI XInputGetCapabilitiesEx
+(
+    _In_  DWORD                   dwReserved,     // Must be 1
+    _In_  DWORD                   dwUserIndex,    // Index of the gamer associated with the device
+    _In_  DWORD                   dwFlags,        // Input flags that identify the device type
+    _Out_ XINPUT_CAPABILITIES_EX* pCapabilitiesEx // Receives the capabilities
+);
 
 #ifdef __cplusplus
 }

@@ -20,7 +20,6 @@
 #ifdef OPENXINPUT_STATIC_GUIDS
     // Build guids, don't need to link against other dll
     #define INITGUID
-#else
 #endif
 
 #define VC_EXTRALEAN
@@ -30,93 +29,78 @@
 #include <strsafe.h>
 #include <SetupAPI.h>
 
-// Direct Input is deprecated, copy here the minimal stuff needed
-#ifdef OPENXINPUT_DISABLE_DSOUND_HEADERS
+///////////////////////////////////////
+// api-ms-win-core-quirks-l1-1-0
+extern "C" {
+BOOL WINAPI QuirkIsEnabled(ULONG quirk);
+}
 
-typedef enum
+///////////////////////////////////////
+// api-ms-win-devices-query-l1-1-0
+#include <devpropdef.h>
+
+typedef struct _DEV_QUERY_RESULT_ACTION_DATA
 {
-    DIRECTSOUNDDEVICE_TYPE_EMULATED,
-    DIRECTSOUNDDEVICE_TYPE_VXD,
-    DIRECTSOUNDDEVICE_TYPE_WDM
-} DIRECTSOUNDDEVICE_TYPE;
+    DWORD field_0;
+    PVOID field_4;
+    PVOID field_8;
+} DEV_QUERY_RESULT_ACTION_DATA, * PDEV_QUERY_RESULT_ACTION_DATA;
 
-typedef enum
-{
-    DIRECTSOUNDDEVICE_DATAFLOW_RENDER,
-    DIRECTSOUNDDEVICE_DATAFLOW_CAPTURE
-} DIRECTSOUNDDEVICE_DATAFLOW;
+typedef HANDLE HDEVQUERY;
 
-typedef struct _DSPROPERTY_DIRECTSOUNDDEVICE_DESCRIPTION_W_DATA
-{
-    DIRECTSOUNDDEVICE_TYPE      Type;           // Device type
-    DIRECTSOUNDDEVICE_DATAFLOW  DataFlow;       // Device dataflow
-    GUID                        DeviceId;       // DirectSound device id
-    LPWSTR                      Description;    // Device description
-    LPWSTR                      Module;         // Device driver module
-    LPWSTR                      Interface;      // Device interface
-    ULONG                       WaveDeviceId;   // Wave device id
-} DSPROPERTY_DIRECTSOUNDDEVICE_DESCRIPTION_W_DATA, * PDSPROPERTY_DIRECTSOUNDDEVICE_DESCRIPTION_W_DATA;
+extern "C" {
+HRESULT WINAPI DevCreateObjectQuery(DWORD a, DWORD b, DWORD c, PDEVPROPKEY PropKey, DWORD e, PVOID f, void(CALLBACK* ObjectQueryCallback)(HDEVQUERY, PVOID, PDEV_QUERY_RESULT_ACTION_DATA), PVOID user_param, HDEVQUERY* pQuery);
+void WINAPI DevCloseObjectQuery(HDEVQUERY h);
+}
 
-typedef BOOL(CALLBACK* LPFNDIRECTSOUNDDEVICEENUMERATECALLBACKW)(PDSPROPERTY_DIRECTSOUNDDEVICE_DESCRIPTION_W_DATA, LPVOID);
+///////////////////////////////////////
+///////////////////////////////////////
 
-typedef struct _DSPROPERTY_DIRECTSOUNDDEVICE_ENUMERATE_W_DATA
-{
-    LPFNDIRECTSOUNDDEVICEENUMERATECALLBACKW Callback;   // Callback function pointer
-    LPVOID                                  Context;    // Callback function context argument
-} DSPROPERTY_DIRECTSOUNDDEVICE_ENUMERATE_W_DATA, * PDSPROPERTY_DIRECTSOUNDDEVICE_ENUMERATE_W_DATA;
+#include "DEVOBJ/DEVOBJ.h"
 
-
-DECLARE_INTERFACE_(IKsPropertySet, IUnknown)
+DECLARE_INTERFACE_(IXInputDevice, IUnknown)
 {
     // IUnknown methods
     STDMETHOD(QueryInterface)   (THIS_ _In_ REFIID, _Outptr_ LPVOID*) PURE;
     STDMETHOD_(ULONG, AddRef)    (THIS) PURE;
     STDMETHOD_(ULONG, Release)   (THIS) PURE;
 
-    // IKsPropertySet methods
-    STDMETHOD(Get)              (THIS_ _In_ REFGUID rguidPropSet, ULONG ulId, _In_reads_bytes_opt_(ulInstanceLength) LPVOID pInstanceData, ULONG ulInstanceLength,
-        _Out_writes_bytes_(ulDataLength) LPVOID pPropertyData, ULONG ulDataLength, _Out_opt_ PULONG pulBytesReturned) PURE;
-    STDMETHOD(Set)              (THIS_ _In_ REFGUID rguidPropSet, ULONG ulId, _In_reads_bytes_opt_(ulInstanceLength)  LPVOID pInstanceData, ULONG ulInstanceLength,
-        _In_reads_bytes_(ulDataLength) LPVOID pPropertyData, ULONG ulDataLength) PURE;
-    STDMETHOD(QuerySupport)     (THIS_ _In_ REFGUID rguidPropSet, ULONG ulId, _Out_ PULONG pulTypeSupport) PURE;
+    // IXInputDevice methods
+    STDMETHOD_(ULONG, CreateFileW)(THIS_ LPCWSTR DevicePath, DWORD dwDesiredAccess, DWORD dwSharedMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+        DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, LPHANDLE lpHandle) PURE;
 };
 
-#else
+DECLARE_INTERFACE_(IInputHostClient, IUnknown)
+{
+    // IUnknown methods
+    STDMETHOD(QueryInterface)   (THIS_ _In_ REFIID, _Outptr_ LPVOID*) PURE;
+    STDMETHOD_(ULONG, AddRef)    (THIS) PURE;
+    STDMETHOD_(ULONG, Release)   (THIS) PURE;
 
-#include <dsound.h>
-#include <dsconf.h>
-
-#endif
+    // IInputHostClient methods
+    STDMETHOD_(ULONG, unk0)(THIS) PURE;
+    STDMETHOD_(ULONG, unk1)(THIS) PURE;
+    STDMETHOD_(ULONG, unk2)(THIS_ DWORD) PURE;
+};
 
 #define DEVICE_STATUS_ACTIVE 1
+#define DEVICE_STATUS_BUS_ACTIVE 2
+
+typedef HRESULT(WINAPI DllGetClassObject_t)(const GUID*, const GUID*, LPVOID*);
 
 #define DEFINE_HIDDEN_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
         static const GUID name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 
-typedef HRESULT(WINAPI DllGetClassObject_t)(const GUID*, const GUID*, LPVOID*);
+DEFINE_HIDDEN_GUID(static_XINPUT_GUID_DEVCLASS_MEDIA, 0x4d36e96c, 0xe325, 0x11ce, 0x0b, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18);
+#define XINPUT_GUID_DEVCLASS_MEDIA static_XINPUT_GUID_DEVCLASS_MEDIA
+
 #ifdef OPENXINPUT_STATIC_GUIDS
     DEFINE_HIDDEN_GUID(static_XINPUT_IID_IClassFactory            , 0x00000001, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
     DEFINE_HIDDEN_GUID(static_XINPUT_IID_IKsPropertySet           , 0x31efac30, 0x515c, 0x11d0, 0xa9, 0xaa, 0x00, 0xaa, 0x00, 0x61, 0xbe, 0x93);
-    DEFINE_HIDDEN_GUID(static_XINPUT_CLSID_DirectSoundPrivate     , 0x11ab3ec0, 0x25ec, 0x11d1, 0xa4, 0xd8, 0x00, 0xc0, 0x4f, 0xc2, 0x8a, 0xca);
-    DEFINE_HIDDEN_GUID(static_XINPUT_DSPROPSETID_DirectSoundDevice, 0x84624f82, 0x25ec, 0x11d1, 0xa4, 0xd8, 0x00, 0xc0, 0x4f, 0xc2, 0x8a, 0xca);
 
     #define XINPUT_IID_IClassFactory             static_XINPUT_IID_IClassFactory
     #define XINPUT_IID_IKsPropertySet            static_XINPUT_IID_IKsPropertySet
-    #define XINPUT_CLSID_DirectSoundPrivate      static_XINPUT_CLSID_DirectSoundPrivate
-    #define XINPUT_DSPROPSETID_DirectSoundDevice static_XINPUT_DSPROPSETID_DirectSoundDevice
 #else
     #define XINPUT_IID_IClassFactory             IID_IClassFactory
-
-    #ifdef OPENXINPUT_DISABLE_DSOUND_HEADERS
-        DEFINE_HIDDEN_GUID(static_XINPUT_IID_IKsPropertySet           , 0x31efac30, 0x515c, 0x11d0, 0xa9, 0xaa, 0x00, 0xaa, 0x00, 0x61, 0xbe, 0x93);
-        DEFINE_HIDDEN_GUID(static_XINPUT_CLSID_DirectSoundPrivate     , 0x11ab3ec0, 0x25ec, 0x11d1, 0xa4, 0xd8, 0x00, 0xc0, 0x4f, 0xc2, 0x8a, 0xca);
-        DEFINE_HIDDEN_GUID(static_XINPUT_DSPROPSETID_DirectSoundDevice, 0x84624f82, 0x25ec, 0x11d1, 0xa4, 0xd8, 0x00, 0xc0, 0x4f, 0xc2, 0x8a, 0xca);
-
-        #define XINPUT_IID_IKsPropertySet            static_XINPUT_IID_IKsPropertySet
-        #define XINPUT_CLSID_DirectSoundPrivate      static_XINPUT_CLSID_DirectSoundPrivate
-        #define XINPUT_DSPROPSETID_DirectSoundDevice static_XINPUT_DSPROPSETID_DirectSoundDevice
-    #else
-        #define XINPUT_CLSID_DirectSoundPrivate      CLSID_DirectSoundPrivate
-        #define XINPUT_DSPROPSETID_DirectSoundDevice DSPROPSETID_DirectSoundDevice
-    #endif
+    #define XINPUT_IID_IKsPropertySet            IID_IKsPropertySet
 #endif
